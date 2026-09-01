@@ -11,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Faz o checkout do código do repositório
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Configura o ambiente Java 21 (igual ao seu ambiente local)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -23,13 +21,31 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 3. Executa os testes automatizados via Maven
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start Local Mock API
+        run: |
+          npm install
+          nohup npm start > api.log 2>&1 &
+        working-directory: ./backend-financeiro
+
+      - name: Wait for API to respond
+        run: |
+          echo "Aguardando a API subir na porta 3000..."
+          for i in {1..15}; do
+            nc -z localhost 3000 && echo "API está online!" && exit 0
+            sleep 1
+          done
+          echo "Erro: A API não respondeu a tempo!"
+          cat ./backend-financeiro/api.log
+          exit 1
+
       - name: Run Tests with Maven
         run: mvn clean test
-        env:
-          API_TOKEN: ${{ secrets.API_TOKEN }} # Passa o token seguro via GitHub Secrets
 
-      # 4. Salva o relatório HTML do Cucumber gerado nos artefatos da pipeline
       - name: Upload Test Report
         if: always()
         uses: actions/upload-artifact@v4
