@@ -9,4 +9,5 @@ public final class Endpoints {
 
     public static final String SIMULATIONS = "http://localhost:3000/api/credito/simular";
     public static final String SIMULATINS_SALDO = "http://localhost:3000/api/saldo";
+    public static final String CARDS = "http://localhost:3000/api/cartoes";
 }
