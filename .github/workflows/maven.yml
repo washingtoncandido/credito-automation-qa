@@ -1,0 +1,54 @@
+name: API Automation CI - Credit & Balance
+
+on:
+  push:
+    branches: [ "master", "dev" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start Local Mock API
+        run: |
+          npm install
+          nohup npm start > api.log 2>&1 &
+        working-directory: ./backend-financeiro
+
+      - name: Wait for API to respond
+        run: |
+          echo "Aguardando a API subir na porta 3000..."
+          for i in {1..15}; do
+            nc -z localhost 3000 && echo "API está online!" && exit 0
+            sleep 1
+          done
+          echo "Erro: A API não respondeu a tempo!"
+          cat ./backend-financeiro/api.log
+          exit 1
+
+      - name: Run Tests with Maven
+        run: mvn clean test
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports.html
